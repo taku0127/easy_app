@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const start5Btn = document.getElementsByClassName('js-start5Btn')[0];
     const start10Btn = document.getElementsByClassName('js-start10Btn')[0];
+    const stop = document.getElementsByClassName('js-stop')[0];
     const circle = document.getElementsByClassName('js-animation')[0];
     const animator = new Animation(circle);
     const times = {
@@ -8,15 +9,21 @@ document.addEventListener('DOMContentLoaded', function() {
         'hold' : 7000,
         'exhale' : 8000,
     }
-    const breathing5minutes = new Breathing(animator,times,5)
-    const breathing10minutes = new Breathing(animator,times,10)
+    breathing5minutes = new Breathing(animator,times,5);
+    breathing10minutes = new Breathing(animator,times,10);
     // ボタンを押したら
     start5Btn.addEventListener('click',function(){
+        if(breathing10minutes) breathing10minutes.stop();
         breathing5minutes.start();
     })
     start10Btn.addEventListener('click',function(){
+        if(breathing5minutes) breathing5minutes.stop();
         breathing10minutes.start();
     })
+    stop.addEventListener('click' ,() => {
+        if(breathing5minutes) breathing5minutes.stop();
+        if(breathing10minutes) breathing10minutes.stop();
+    } )
 });
 
 class Animation{
@@ -56,28 +63,39 @@ class Breathing{
             hold : new Sound('sine', 0.2 , 400),
             end : new Sound('sine', 0.2 , 300)
         }
+        this.interval = null;
+        this.inhaleTimeout = null;
+        this.holdTimeout = null;
     }
 
     start(){
+        this.stop();
         this.cycle();
-        const interval = setInterval(() => {
+        this.interval = setInterval(() => {
             this.cycle();
         }, this.totalTime);
         setTimeout(() => {
-            clearInterval(interval);
+            clearInterval(this.interval);
         }, this.minutes);
     }
 
     cycle(){
         this.sounds.start.playSound();
         this.animation.bigger(this.times.inhale)
-        setTimeout(() => {
+        this.inhaleTimeout = setTimeout(() => {
                 this.sounds.hold.playSound();
-                setTimeout(()=>{
+                this.holdTimeout = setTimeout(()=>{
                     this.sounds.end.playSound();
                     this.animation.smaller(this.times.exhale);
                 },this.times.hold);
             }, this.times.inhale);
+    }
+
+    stop(){
+        clearInterval(this.interval);
+        clearInterval(this.inhaleTimeout);
+        clearInterval(this.holdTimeout);
+        this.animation.smaller(this.times.exhale);
     }
 
     totalTime(){
